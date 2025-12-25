@@ -1,0 +1,8 @@
+.{
+    .screen_width = 960,
+    .screen_height = 540,
+    .target_fps = 60,
+
+    .window_title_prefix = "Raylib test in Zig - FPS:",
+    .window_title_sufix = " ! :3",
+}

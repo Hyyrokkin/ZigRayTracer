@@ -14,6 +14,8 @@ const PointLight = types.PointLight;
 const DirectionalLight = types.DirectionalLight;
 const Vector3 = types.Vector3;
 
+const epsilon = renderInfos.getEpsilon();
+
 var test_sceene: Sceen = .{};
 var test_camera: Camera = .{};
 
@@ -44,7 +46,7 @@ pub fn update() void {
         var y: i32 = @divTrunc(-renderInfos.getHeightI32(), 2);
         while (y < @divTrunc(renderInfos.getHeightI32(), 2)) : (y += 1) {
             const dirrection: Vector3 = canvasToViewPort(@floatFromInt(x), @floatFromInt(y));
-            const color: Color = TraceRay(active_camera.position, dirrection, active_camera.near_plane, active_camera.far_plane);
+            const color: Color = TraceRay(active_camera.position, dirrection, active_camera.near_plane, active_camera.far_plane, renderInfos.getRecursionDepth());
 
             renderInfos.putPixel(x, y, color);
         }
@@ -59,7 +61,7 @@ fn canvasToViewPort(x: f32, y: f32) Vector3 {
     );
 }
 
-fn TraceRay(origin: Vector3, dirrection: Vector3, near_plane: f32, far_plane: f32) Color {
+fn TraceRay(origin: Vector3, dirrection: Vector3, near_plane: f32, far_plane: f32, recursion_depth: u32) Color {
     const res = ClosestIntersection(origin, dirrection, near_plane, far_plane);
 
     if (res.closest_sphere) |sphere| {
@@ -67,7 +69,17 @@ fn TraceRay(origin: Vector3, dirrection: Vector3, near_plane: f32, far_plane: f3
         const hit_normal = hit_point.subtract(sphere.center).normalize();
         const light_intensity = ComputeLighting(hit_point, hit_normal, dirrection.normalize().scale(-1), sphere.specular);
 
-        return ComputeColorByIntensity(sphere.color, light_intensity);
+        const local_color: Color = ComputeColorByIntensity(sphere.color, light_intensity);
+        const local_reflecivity: f32 = sphere.reflective;
+        if (recursion_depth <= 0 or local_reflecivity <= 0) {
+            return local_color;
+        }
+
+        const reflected_ray: Vector3 = ReflectRay(dirrection.scale(-1), hit_normal);
+        const reflected_color: Color = TraceRay(hit_point, reflected_ray, epsilon, math.inf(f32), recursion_depth - 1);
+
+        const final_color: Color = MixColorsByRatio(local_color, reflected_color, local_reflecivity);
+        return final_color;
     }
 
     return Color.ray_white;
@@ -136,7 +148,7 @@ fn ComputeLighting(point: Vector3, normal: Vector3, view_vector: Vector3, specul
                     else => unreachable,
                 };
 
-                const shadow_res = ClosestIntersection(point, light_dir, 0.01, light_distance);
+                const shadow_res = ClosestIntersection(point, light_dir, epsilon, light_distance);
                 if (shadow_res.closest_sphere) |sphere| {
                     _ = sphere;
                     continue;
@@ -170,7 +182,7 @@ fn ComputeSpecularLighting(normal: Vector3, light_dirrection: Vector3, light_int
         return Vector3.zero();
     }
 
-    const ideal_reflection: Vector3 = normal.scale(2 * normal.dotProduct(light_dirrection)).subtract(light_dirrection).normalize();
+    const ideal_reflection: Vector3 = ReflectRay(light_dirrection, normal);
     const ideal_reflection_difference: f32 = ideal_reflection.dotProduct(view_vector);
     if (ideal_reflection_difference > 0) {
         return light_intensity.scale(math.pow(f32, ideal_reflection_difference, specular));
@@ -179,10 +191,37 @@ fn ComputeSpecularLighting(normal: Vector3, light_dirrection: Vector3, light_int
     return Vector3.zero();
 }
 
+fn ReflectRay(ray: Vector3, normal: Vector3) Vector3 {
+    return normal.scale(2 * normal.dotProduct(ray)).subtract(ray).normalize();
+}
+
 fn ComputeColorByIntensity(color: Color, intensity: Vector3) Color {
-    const new_r: u8 = @as(u8, @intFromFloat(@min(255.0, @max(0.0, @as(f32, @floatFromInt(color.r)) * intensity.x))));
-    const new_g: u8 = @as(u8, @intFromFloat(@min(255.0, @max(0.0, @as(f32, @floatFromInt(color.g)) * intensity.y))));
-    const new_b: u8 = @as(u8, @intFromFloat(@min(255.0, @max(0.0, @as(f32, @floatFromInt(color.b)) * intensity.z))));
+    const new_r: u8 = ClampToU8(@as(f32, @floatFromInt(color.r)) * intensity.x);
+    const new_g: u8 = ClampToU8(@as(f32, @floatFromInt(color.g)) * intensity.y);
+    const new_b: u8 = ClampToU8(@as(f32, @floatFromInt(color.b)) * intensity.z);
 
     return Color.init(new_r, new_g, new_b, color.a);
+}
+
+fn MixColorsByRatio(color_a: Color, color_b: Color, raio: f32) Color {
+    const a_r: f32 = @as(f32, @floatFromInt(color_a.r));
+    const a_g: f32 = @as(f32, @floatFromInt(color_a.g));
+    const a_b: f32 = @as(f32, @floatFromInt(color_a.b));
+    const a_a: f32 = @as(f32, @floatFromInt(color_a.a));
+
+    const b_r: f32 = @as(f32, @floatFromInt(color_b.r));
+    const b_g: f32 = @as(f32, @floatFromInt(color_b.g));
+    const b_b: f32 = @as(f32, @floatFromInt(color_b.b));
+    const b_a: f32 = @as(f32, @floatFromInt(color_b.a));
+
+    const new_r: f32 = a_r * (1 - raio) + b_r * raio;
+    const new_g: f32 = a_g * (1 - raio) + b_g * raio;
+    const new_b: f32 = a_b * (1 - raio) + b_b * raio;
+    const new_a: f32 = a_a * (1 - raio) + b_a * raio;
+
+    return Color.init(ClampToU8(new_r), ClampToU8(new_g), ClampToU8(new_b), ClampToU8(new_a));
+}
+
+fn ClampToU8(in: f32) u8 {
+    return @as(u8, @intFromFloat(@min(255.0, @max(0.0, in))));
 }

@@ -30,6 +30,7 @@ pub const Sphere = struct {
     radius: f32 = 1,
     color: Color = Color.white,
     specular: f32 = 0,
+    reflective: f32 = 0,
 };
 
 pub const Camera = struct {

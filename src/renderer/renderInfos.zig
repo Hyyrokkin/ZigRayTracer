@@ -30,3 +30,10 @@ pub fn drawDebug(x: i32, y: i32) void {
     const corrected_y = options.screen_height - (@divTrunc(options.screen_height, 2) + y);
     raylib.drawCircle(corrected_x, corrected_y, 10, Color.white);
 }
+
+pub fn getRecursionDepth() u32 {
+    return options.recursion_deph;
+}
+pub fn getEpsilon() f32 {
+    return options.epsilon;
+}

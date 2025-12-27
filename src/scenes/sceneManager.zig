@@ -15,22 +15,26 @@ pub fn getDefaultScene(allocator: std.mem.Allocator) !Scene {
         .center = Vector3.init(0, -1, 3),
         .color = Color.red,
         .specular = 500,
+        .reflective = 0.2,
     };
     const sphere_2: Sphere = .{
         .center = Vector3.init(2, 0, 4),
         .color = Color.blue,
         .specular = 500,
+        .reflective = 0.3,
     };
     const sphere_3: Sphere = .{
         .center = Vector3.init(-2, 0, 4),
         .color = Color.green,
         .specular = 10,
+        .reflective = 0.4,
     };
     const sphere_4: Sphere = .{
         .radius = 5000,
         .center = Vector3.init(1, -5001, 0),
         .color = Color.yellow,
         .specular = 1000,
+        .reflective = 0.5,
     };
 
     const light_ambient: Light = .{ .AmbientLight = .{

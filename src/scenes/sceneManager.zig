@@ -34,7 +34,7 @@ pub fn getDefaultScene(allocator: std.mem.Allocator) !Scene {
         .center = Vector3.init(1, -5001, 0),
         .color = Color.yellow,
         .specular = 1000,
-        .reflective = 0.5,
+        .reflective = 0.05,
     };
 
     const light_ambient: Light = .{ .AmbientLight = .{

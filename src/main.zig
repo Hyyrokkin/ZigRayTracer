@@ -8,7 +8,7 @@ const scene_manager = @import("scenes").scene_manager;
 
 pub fn main() !void {
     const default_scene = try scene_manager.getDefaultScene(smp);
-    const default_camera = scene_manager.getDefaultCamera(render_infos.getWidthF32(), render_infos.getHeightF32());
+    const default_camera = scene_manager.getDefaultCamera(render_infos.GetWidthF32(), render_infos.DetHeightF32());
 
     engine.init(default_scene, default_camera);
     defer engine.deinit();

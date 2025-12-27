@@ -1,11 +1,11 @@
 const std = @import("std");
 const math = std.math;
 
-const renderInfos = @import("renderer").renderInfors;
+const renderInfos = @import("renderer").render_infos;
 const Color = renderInfos.Color;
 
 const types = @import("types.zig");
-const Sceen = types.Sceene;
+const Sceen = types.Scene;
 const Camera = types.Camera;
 const Sphere = types.Sphere;
 const Light = types.Light;
@@ -17,57 +17,25 @@ const Vector3 = types.Vector3;
 var test_sceene: Sceen = .{};
 var test_camera: Camera = .{};
 
-pub fn init(allocator: std.mem.Allocator) !void {
-    const sphere_1: Sphere = .{
-        .center = Vector3.init(0, -1, 3),
-        .color = Color.red,
-        .specular = 500,
-    };
-    const sphere_2: Sphere = .{
-        .center = Vector3.init(2, 0, 4),
-        .color = Color.blue,
-        .specular = 500,
-    };
-    const sphere_3: Sphere = .{
-        .center = Vector3.init(-2, 0, 4),
-        .color = Color.green,
-        .specular = 10,
-    };
-    const sphere_4: Sphere = .{
-        .radius = 5000,
-        .center = Vector3.init(1, -5001, 0),
-        .color = Color.yellow,
-        .specular = 1000,
-    };
+var active_sceene: Sceen = undefined;
+var active_camera: Camera = undefined;
 
-    const light_ambient: Light = .{ .AmbientLight = .{
-        .inensity = Vector3.init(0.2, 0.2, 0.2),
-    } };
-    const light_point: Light = .{ .PointLight = .{
-        .intensity = Vector3.init(0.6, 0.6, 0.6),
-        .position = Vector3.init(2, 1, 0),
-    } };
-    const light_directional: Light = .{ .DirectionalLight = .{
-        .intensity = Vector3.init(0.2, 0.2, 0.2),
-        .direction = Vector3.init(1, 4, 4),
-    } };
-
-    try test_sceene.init(allocator);
-
-    try test_sceene.addSphere(sphere_1);
-    try test_sceene.addSphere(sphere_2);
-    try test_sceene.addSphere(sphere_3);
-    try test_sceene.addSphere(sphere_4);
-
-    try test_sceene.addLight(light_ambient);
-    try test_sceene.addLight(light_point);
-    try test_sceene.addLight(light_directional);
-
-    test_camera.init(renderInfos.getWidthF32(), renderInfos.getHeightF32());
+pub fn init(initial_scene: Sceen, initial_camera: Camera) void {
+    active_sceene = initial_scene;
+    active_camera = initial_camera;
 }
 
 pub fn deinit() void {
-    test_sceene.deinit();
+    active_sceene.deinit();
+}
+
+pub fn switchScene(new_scene: Sceen) void {
+    active_sceene.deinit();
+    active_sceene = new_scene;
+}
+
+pub fn switchCamera(new_camera: Camera) void {
+    active_camera = new_camera;
 }
 
 pub fn update() void {
@@ -76,7 +44,7 @@ pub fn update() void {
         var y: i32 = @divTrunc(-renderInfos.getHeightI32(), 2);
         while (y < @divTrunc(renderInfos.getHeightI32(), 2)) : (y += 1) {
             const dirrection: Vector3 = canvasToViewPort(@floatFromInt(x), @floatFromInt(y));
-            const color: Color = TraceRay(test_camera.position, dirrection, test_camera.near_plane, test_camera.far_plane);
+            const color: Color = TraceRay(active_camera.position, dirrection, active_camera.near_plane, active_camera.far_plane);
 
             renderInfos.putPixel(x, y, color);
         }
@@ -85,9 +53,9 @@ pub fn update() void {
 
 fn canvasToViewPort(x: f32, y: f32) Vector3 {
     return Vector3.init(
-        x * test_camera.aspect_ratio / renderInfos.getWidthF32(),
+        x * active_camera.aspect_ratio / renderInfos.getWidthF32(),
         y * 1 / renderInfos.getHeightF32(),
-        test_camera.near_plane,
+        active_camera.near_plane,
     );
 }
 
@@ -108,7 +76,7 @@ fn TraceRay(origin: Vector3, dirrection: Vector3, near_plane: f32, far_plane: f3
 fn ClosestIntersection(origin: Vector3, dirrection: Vector3, near_plane: f32, far_plane: f32) struct { closest_sphere: ?Sphere, closest_point: f32 } {
     var closest_point: f32 = std.math.inf(f32);
     var closest_sphere: ?Sphere = null;
-    for (test_sceene.spheres.items) |sphere_to_test| {
+    for (active_sceene.spheres.items) |sphere_to_test| {
         const hit_points = IntersectRaySphere(origin, dirrection, sphere_to_test);
         if (near_plane < hit_points.t1 and hit_points.t1 < far_plane and hit_points.t1 < closest_point) {
             closest_point = hit_points.t1;
@@ -150,7 +118,7 @@ fn IntersectRaySphere(origin: Vector3, dirrection: Vector3, sphere: Sphere) stru
 
 fn ComputeLighting(point: Vector3, normal: Vector3, view_vector: Vector3, specular: f32) Vector3 {
     var intensity: Vector3 = Vector3.zero();
-    for (test_sceene.lights.items) |light_to_test| {
+    for (active_sceene.lights.items) |light_to_test| {
         switch (light_to_test) {
             .AmbientLight => |al| {
                 intensity = intensity.add(al.inensity);

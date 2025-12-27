@@ -75,6 +75,14 @@ pub fn build(b: *std.Build) void {
         },
     });
 
+    const scenes = b.addModule("scenes", .{
+        .root_source_file = b.path("src/scenes/root.zig"),
+        .target = target,
+        .imports = &.{
+            .{ .name = "engine", .module = engine },
+        },
+    });
+
     // Here we define an executable. An executable needs to have a root module
     // which needs to expose a `main` function. While we could add a main function
     // to the module defined above, it's sometimes preferable to split business
@@ -115,6 +123,7 @@ pub fn build(b: *std.Build) void {
                 //.{ .name = "FirstRealZigTest", .module = mod },
                 .{ .name = "renderer", .module = renderer },
                 .{ .name = "engine", .module = engine },
+                .{ .name = "scenes", .module = scenes },
             },
         }),
     });

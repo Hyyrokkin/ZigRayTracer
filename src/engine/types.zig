@@ -1,26 +1,26 @@
 const std = @import("std");
 const ArrayList = std.ArrayList;
 
-const renderInfos = @import("renderer").renderInfors;
+const renderInfos = @import("renderer").render_infos;
 pub const Vector3 = renderInfos.Vector3;
 pub const Color = renderInfos.Color;
 
-pub const Sceene = struct {
+pub const Scene = struct {
     spheres: ArrayList(Sphere) = .empty,
     lights: ArrayList(Light) = .empty,
     allocator: std.mem.Allocator = undefined,
 
-    pub fn init(self: *Sceene, alloc: std.mem.Allocator) !void {
+    pub fn init(self: *Scene, alloc: std.mem.Allocator) !void {
         self.allocator = alloc;
     }
-    pub fn deinit(self: *Sceene) void {
+    pub fn deinit(self: *Scene) void {
         self.spheres.deinit(self.allocator);
         self.lights.deinit(self.allocator);
     }
-    pub fn addSphere(self: *Sceene, sphere: Sphere) !void {
+    pub fn addSphere(self: *Scene, sphere: Sphere) !void {
         try self.spheres.append(self.allocator, sphere);
     }
-    pub fn addLight(self: *Sceene, light: Light) !void {
+    pub fn addLight(self: *Scene, light: Light) !void {
         try self.lights.append(self.allocator, light);
     }
 };

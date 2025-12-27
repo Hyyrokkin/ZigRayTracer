@@ -14,42 +14,42 @@ pub fn HandleInput(camera: Camera, scene: Scene) struct { cam: Camera, sce: Scen
     var new_pos: Vector3 = Vector3.zero();
     var new_rot: Vector3 = Vector3.zero();
 
-    const elapsed_time = render_infos.GetEplapsedTime();
+    const elapsed_time = render_infos.getEplapsedTime();
 
-    if (render_infos.IsKeyDown(KeyboardKey.left)) {
+    if (render_infos.isKeyDown(KeyboardKey.left)) {
         new_rot = new_rot.add(Vector3.init(0, -input_options.y_axis_rot_speed, 0));
     }
-    if (render_infos.IsKeyDown(KeyboardKey.right)) {
+    if (render_infos.isKeyDown(KeyboardKey.right)) {
         new_rot = new_rot.add(Vector3.init(0, input_options.y_axis_rot_speed, 0));
     }
 
-    if (render_infos.IsKeyDown(KeyboardKey.up)) {
+    if (render_infos.isKeyDown(KeyboardKey.up)) {
         new_rot = new_rot.add(Vector3.init(input_options.x_axis_rot_speed, 0, 0));
     }
-    if (render_infos.IsKeyDown(KeyboardKey.down)) {
+    if (render_infos.isKeyDown(KeyboardKey.down)) {
         new_rot = new_rot.add(Vector3.init(-input_options.x_axis_rot_speed, 0, 0));
     }
 
     new_rot = camera.rotation.add(new_rot.scale(elapsed_time));
 
-    if (render_infos.IsKeyDown(KeyboardKey.w)) {
+    if (render_infos.isKeyDown(KeyboardKey.w)) {
         new_pos = new_pos.add(Vector3.init(0, 0, input_options.z_axis_move_speed));
     }
-    if (render_infos.IsKeyDown(KeyboardKey.s)) {
+    if (render_infos.isKeyDown(KeyboardKey.s)) {
         new_pos = new_pos.add(Vector3.init(0, 0, -input_options.z_axis_move_speed));
     }
 
-    if (render_infos.IsKeyDown(KeyboardKey.a)) {
+    if (render_infos.isKeyDown(KeyboardKey.a)) {
         new_pos = new_pos.add(Vector3.init(-input_options.x_axis_move_speed, 0, 0));
     }
-    if (render_infos.IsKeyDown(KeyboardKey.d)) {
+    if (render_infos.isKeyDown(KeyboardKey.d)) {
         new_pos = new_pos.add(Vector3.init(input_options.x_axis_move_speed, 0, 0));
     }
 
-    if (render_infos.IsKeyDown(KeyboardKey.space)) {
+    if (render_infos.isKeyDown(KeyboardKey.space)) {
         new_pos = new_pos.add(Vector3.init(0, input_options.y_axis_move_speed, 0));
     }
-    if (render_infos.IsKeyDown(KeyboardKey.left_shift)) {
+    if (render_infos.isKeyDown(KeyboardKey.left_shift)) {
         new_pos = new_pos.add(Vector3.init(0, -input_options.y_axis_move_speed, 0));
     }
 

@@ -16,7 +16,7 @@ const DirectionalLight = types.DirectionalLight;
 const Vector3 = types.Vector3;
 const Matrix = types.Marix;
 
-const epsilon = renderInfos.GetEpsilon();
+const epsilon = renderInfos.getEpsilon();
 
 var active_sceene: Sceen = undefined;
 var active_camera: Camera = undefined;
@@ -46,55 +46,55 @@ pub fn update() void {
 
     const rotation_matrix = Matrix.rotateX(active_camera.rotation.x).multiply(Matrix.rotateY(active_camera.rotation.y));
 
-    var x: i32 = @divTrunc(-renderInfos.GetWidthI32(), 2);
-    while (x < @divTrunc(renderInfos.GetWidthI32(), 2)) : (x += 1) {
-        var y: i32 = @divTrunc(-renderInfos.GetHeightI32(), 2);
-        while (y < @divTrunc(renderInfos.GetHeightI32(), 2)) : (y += 1) {
+    var x: i32 = @divTrunc(-renderInfos.getWidthI32(), 2);
+    while (x < @divTrunc(renderInfos.getWidthI32(), 2)) : (x += 1) {
+        var y: i32 = @divTrunc(-renderInfos.getHeightI32(), 2);
+        while (y < @divTrunc(renderInfos.getHeightI32(), 2)) : (y += 1) {
             const dirrection: Vector3 = canvasToViewPort(@floatFromInt(x), @floatFromInt(y)).transform(rotation_matrix);
-            const color: Color = TraceRay(active_camera.position, dirrection, active_camera.near_plane, active_camera.far_plane, renderInfos.GetRecursionDepth());
+            const color: Color = traceRay(active_camera.position, dirrection, active_camera.near_plane, active_camera.far_plane, renderInfos.getRecursionDepth());
 
-            renderInfos.PutPixel(x, y, color);
+            renderInfos.putPixel(x, y, color);
         }
     }
 }
 
 fn canvasToViewPort(x: f32, y: f32) Vector3 {
     return Vector3.init(
-        x * active_camera.aspect_ratio / renderInfos.GetWidthF32(),
-        y * 1 / renderInfos.DetHeightF32(),
+        x * active_camera.aspect_ratio / renderInfos.getWidthF32(),
+        y * 1 / renderInfos.getHeightF32(),
         active_camera.near_plane,
     );
 }
 
-fn TraceRay(origin: Vector3, dirrection: Vector3, near_plane: f32, far_plane: f32, recursion_depth: u32) Color {
-    const res = ClosestIntersection(origin, dirrection, near_plane, far_plane);
+fn traceRay(origin: Vector3, dirrection: Vector3, near_plane: f32, far_plane: f32, recursion_depth: u32) Color {
+    const res = closestIntersection(origin, dirrection, near_plane, far_plane);
 
     if (res.closest_sphere) |sphere| {
         const hit_point = origin.add(dirrection.scale(res.closest_point));
         const hit_normal = hit_point.subtract(sphere.center).normalize();
-        const light_intensity = ComputeLighting(hit_point, hit_normal, dirrection.normalize().scale(-1), sphere.specular);
+        const light_intensity = computeLighting(hit_point, hit_normal, dirrection.normalize().scale(-1), sphere.specular);
 
-        const local_color: Color = ComputeColorByIntensity(sphere.color, light_intensity);
+        const local_color: Color = computeColorByIntensity(sphere.color, light_intensity);
         const local_reflecivity: f32 = sphere.reflective;
         if (recursion_depth <= 0 or local_reflecivity <= 0) {
             return local_color;
         }
 
-        const reflected_ray: Vector3 = ReflectRay(dirrection.scale(-1), hit_normal);
-        const reflected_color: Color = TraceRay(hit_point, reflected_ray, epsilon, math.inf(f32), recursion_depth - 1);
+        const reflected_ray: Vector3 = dirrection.reflect(hit_normal);
+        const reflected_color: Color = traceRay(hit_point, reflected_ray, epsilon, math.inf(f32), recursion_depth - 1);
 
-        const final_color: Color = MixColorsByRatio(local_color, reflected_color, local_reflecivity);
+        const final_color: Color = mixColorsByRatio(local_color, reflected_color, local_reflecivity);
         return final_color;
     }
 
     return Color.ray_white;
 }
 
-fn ClosestIntersection(origin: Vector3, dirrection: Vector3, near_plane: f32, far_plane: f32) struct { closest_sphere: ?Sphere, closest_point: f32 } {
+fn closestIntersection(origin: Vector3, dirrection: Vector3, near_plane: f32, far_plane: f32) struct { closest_sphere: ?Sphere, closest_point: f32 } {
     var closest_point: f32 = std.math.inf(f32);
     var closest_sphere: ?Sphere = null;
     for (active_sceene.spheres.items) |sphere_to_test| {
-        const hit_points = IntersectRaySphere(origin, dirrection, sphere_to_test);
+        const hit_points = intersectRaySphere(origin, dirrection, sphere_to_test);
         if (near_plane < hit_points.t1 and hit_points.t1 < far_plane and hit_points.t1 < closest_point) {
             closest_point = hit_points.t1;
             closest_sphere = sphere_to_test;
@@ -111,7 +111,7 @@ fn ClosestIntersection(origin: Vector3, dirrection: Vector3, near_plane: f32, fa
     };
 }
 
-fn IntersectRaySphere(origin: Vector3, dirrection: Vector3, sphere: Sphere) struct { t1: f32, t2: f32 } {
+fn intersectRaySphere(origin: Vector3, dirrection: Vector3, sphere: Sphere) struct { t1: f32, t2: f32 } {
     const r_squared: f32 = sphere.radius_squared;
     const sphere_to_origin: Vector3 = origin.subtract(sphere.center);
 
@@ -133,7 +133,7 @@ fn IntersectRaySphere(origin: Vector3, dirrection: Vector3, sphere: Sphere) stru
     };
 }
 
-fn ComputeLighting(point: Vector3, normal: Vector3, view_vector: Vector3, specular: f32) Vector3 {
+fn computeLighting(point: Vector3, normal: Vector3, view_vector: Vector3, specular: f32) Vector3 {
     var intensity: Vector3 = Vector3.zero();
     for (active_sceene.lights.items) |light_to_test| {
         switch (light_to_test) {
@@ -153,7 +153,7 @@ fn ComputeLighting(point: Vector3, normal: Vector3, view_vector: Vector3, specul
                     else => unreachable,
                 };
 
-                const shadow_res = ClosestIntersection(point, light_dir, epsilon, light_distance);
+                const shadow_res = closestIntersection(point, light_dir, epsilon, light_distance);
                 if (shadow_res.closest_sphere) |sphere| {
                     _ = sphere;
                     continue;
@@ -165,8 +165,8 @@ fn ComputeLighting(point: Vector3, normal: Vector3, view_vector: Vector3, specul
                     else => unreachable,
                 };
 
-                intensity = intensity.add(ComputeDiffuseLighting(normal, light_dir.normalize(), light_intensity));
-                intensity = intensity.add(ComputeSpecularLighting(normal, light_dir.normalize(), light_intensity, view_vector, specular));
+                intensity = intensity.add(computeDiffuseLighting(normal, light_dir.normalize(), light_intensity));
+                intensity = intensity.add(computeSpecularLighting(normal, light_dir.normalize(), light_intensity, view_vector, specular));
             },
         }
     }
@@ -174,7 +174,7 @@ fn ComputeLighting(point: Vector3, normal: Vector3, view_vector: Vector3, specul
     return intensity;
 }
 
-fn ComputeDiffuseLighting(normal: Vector3, light_dirrection: Vector3, light_intensity: Vector3) Vector3 {
+fn computeDiffuseLighting(normal: Vector3, light_dirrection: Vector3, light_intensity: Vector3) Vector3 {
     const view_intesity: f32 = normal.dotProduct(light_dirrection);
     if (view_intesity > 0) {
         return light_intensity.scale(view_intesity);
@@ -182,12 +182,12 @@ fn ComputeDiffuseLighting(normal: Vector3, light_dirrection: Vector3, light_inte
     return Vector3.zero();
 }
 
-fn ComputeSpecularLighting(normal: Vector3, light_dirrection: Vector3, light_intensity: Vector3, view_vector: Vector3, specular: f32) Vector3 {
+fn computeSpecularLighting(normal: Vector3, light_dirrection: Vector3, light_intensity: Vector3, view_vector: Vector3, specular: f32) Vector3 {
     if (specular <= -1) {
         return Vector3.zero();
     }
 
-    const ideal_reflection: Vector3 = ReflectRay(light_dirrection, normal);
+    const ideal_reflection: Vector3 = light_dirrection.reflect(normal);
     const ideal_reflection_difference: f32 = ideal_reflection.dotProduct(view_vector);
     if (ideal_reflection_difference > 0) {
         return light_intensity.scale(math.pow(f32, ideal_reflection_difference, specular));
@@ -196,19 +196,15 @@ fn ComputeSpecularLighting(normal: Vector3, light_dirrection: Vector3, light_int
     return Vector3.zero();
 }
 
-fn ReflectRay(ray: Vector3, normal: Vector3) Vector3 {
-    return normal.scale(2 * normal.dotProduct(ray)).subtract(ray).normalize();
-}
-
-fn ComputeColorByIntensity(color: Color, intensity: Vector3) Color {
-    const new_r: u8 = ClampToU8(@as(f32, @floatFromInt(color.r)) * intensity.x);
-    const new_g: u8 = ClampToU8(@as(f32, @floatFromInt(color.g)) * intensity.y);
-    const new_b: u8 = ClampToU8(@as(f32, @floatFromInt(color.b)) * intensity.z);
+fn computeColorByIntensity(color: Color, intensity: Vector3) Color {
+    const new_r: u8 = clampToU8(@as(f32, @floatFromInt(color.r)) * intensity.x);
+    const new_g: u8 = clampToU8(@as(f32, @floatFromInt(color.g)) * intensity.y);
+    const new_b: u8 = clampToU8(@as(f32, @floatFromInt(color.b)) * intensity.z);
 
     return Color.init(new_r, new_g, new_b, color.a);
 }
 
-fn MixColorsByRatio(color_a: Color, color_b: Color, raio: f32) Color {
+fn mixColorsByRatio(color_a: Color, color_b: Color, raio: f32) Color {
     const a_r: f32 = @as(f32, @floatFromInt(color_a.r));
     const a_g: f32 = @as(f32, @floatFromInt(color_a.g));
     const a_b: f32 = @as(f32, @floatFromInt(color_a.b));
@@ -224,9 +220,9 @@ fn MixColorsByRatio(color_a: Color, color_b: Color, raio: f32) Color {
     const new_b: f32 = a_b * (1 - raio) + b_b * raio;
     const new_a: f32 = a_a * (1 - raio) + b_a * raio;
 
-    return Color.init(ClampToU8(new_r), ClampToU8(new_g), ClampToU8(new_b), ClampToU8(new_a));
+    return Color.init(clampToU8(new_r), clampToU8(new_g), clampToU8(new_b), clampToU8(new_a));
 }
 
-fn ClampToU8(in: f32) u8 {
+fn clampToU8(in: f32) u8 {
     return @as(u8, @intFromFloat(@min(255.0, @max(0.0, in))));
 }

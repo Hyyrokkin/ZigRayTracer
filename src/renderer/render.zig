@@ -8,7 +8,6 @@ const screen_options = @import("settings").screen_options;
 
 pub fn render(updateFunction: fn () void) !void {
     raylib.initWindow(screen_options.screen_width, screen_options.screen_height, "");
-    raylib.initWindow(screen_options.screen_width, screen_options.screen_height, "");
     defer raylib.closeWindow();
 
     raylib.setTargetFPS(screen_options.target_fps);

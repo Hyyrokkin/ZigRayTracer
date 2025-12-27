@@ -49,3 +49,7 @@ pub fn isKeyDown(key: KeyboardKey) bool {
 pub fn getEplapsedTime() f32 {
     return raylib.getFrameTime();
 }
+
+pub fn getThreads() usize {
+    return render_options.threads;
+}

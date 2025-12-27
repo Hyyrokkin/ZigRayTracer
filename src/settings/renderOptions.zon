@@ -1,4 +1,6 @@
 .{
     .recursion_deph = 3,
     .epsilon = 0.01,
+
+    .threads = 16,
 }

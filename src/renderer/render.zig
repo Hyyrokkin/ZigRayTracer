@@ -43,7 +43,6 @@ fn redrawWindowTitle() !void {
     defer allocator.free(fps_string);
 
     const window_title: [:0]const u8 = try std.mem.concatWithSentinel(allocator, u8, &[_][]const u8{ screen_options.window_title_prefix, fps_string, screen_options.window_title_sufix }, 0);
-    const window_title: [:0]const u8 = try std.mem.concatWithSentinel(allocator, u8, &[_][]const u8{ screen_options.window_title_prefix, fps_string, screen_options.window_title_sufix }, 0);
     defer allocator.free(window_title);
 
     raylib.setWindowTitle(window_title);

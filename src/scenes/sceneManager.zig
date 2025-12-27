@@ -11,25 +11,25 @@ const Light = engine_types.Light;
 pub fn getDefaultScene(allocator: std.mem.Allocator) !Scene {
     var default_scene: Scene = .{};
 
-    const sphere_1: Sphere = .{
+    var sphere_1: Sphere = .{
         .center = Vector3.init(0, -1, 3),
         .color = Color.red,
         .specular = 500,
         .reflective = 0.2,
     };
-    const sphere_2: Sphere = .{
+    var sphere_2: Sphere = .{
         .center = Vector3.init(2, 0, 4),
         .color = Color.blue,
         .specular = 500,
         .reflective = 0.3,
     };
-    const sphere_3: Sphere = .{
+    var sphere_3: Sphere = .{
         .center = Vector3.init(-2, 0, 4),
         .color = Color.green,
         .specular = 10,
         .reflective = 0.4,
     };
-    const sphere_4: Sphere = .{
+    var sphere_4: Sphere = .{
         .radius = 5000,
         .center = Vector3.init(1, -5001, 0),
         .color = Color.yellow,
@@ -50,6 +50,11 @@ pub fn getDefaultScene(allocator: std.mem.Allocator) !Scene {
     } };
 
     try default_scene.init(allocator);
+
+    sphere_1.init();
+    sphere_2.init();
+    sphere_3.init();
+    sphere_4.init();
 
     try default_scene.addSphere(sphere_1);
     try default_scene.addSphere(sphere_2);

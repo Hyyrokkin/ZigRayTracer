@@ -4,6 +4,7 @@ const math = std.math;
 const renderInfos = @import("renderer").render_infos;
 const Color = renderInfos.Color;
 
+const input = @import("input.zig");
 const types = @import("types.zig");
 const Sceen = types.Scene;
 const Camera = types.Camera;
@@ -13,11 +14,9 @@ const AmbientLight = types.AmbientLight;
 const PointLight = types.PointLight;
 const DirectionalLight = types.DirectionalLight;
 const Vector3 = types.Vector3;
+const Matrix = types.Marix;
 
-const epsilon = renderInfos.getEpsilon();
-
-var test_sceene: Sceen = .{};
-var test_camera: Camera = .{};
+const epsilon = renderInfos.GetEpsilon();
 
 var active_sceene: Sceen = undefined;
 var active_camera: Camera = undefined;
@@ -41,22 +40,28 @@ pub fn switchCamera(new_camera: Camera) void {
 }
 
 pub fn update() void {
-    var x: i32 = @divTrunc(-renderInfos.getWidthI32(), 2);
-    while (x < @divTrunc(renderInfos.getWidthI32(), 2)) : (x += 1) {
-        var y: i32 = @divTrunc(-renderInfos.getHeightI32(), 2);
-        while (y < @divTrunc(renderInfos.getHeightI32(), 2)) : (y += 1) {
-            const dirrection: Vector3 = canvasToViewPort(@floatFromInt(x), @floatFromInt(y));
-            const color: Color = TraceRay(active_camera.position, dirrection, active_camera.near_plane, active_camera.far_plane, renderInfos.getRecursionDepth());
+    const updated_info = input.HandleInput(active_camera, active_sceene);
+    active_camera = updated_info.cam;
+    active_sceene = updated_info.sce;
 
-            renderInfos.putPixel(x, y, color);
+    const rotation_matrix = Matrix.rotateX(active_camera.rotation.x).multiply(Matrix.rotateY(active_camera.rotation.y));
+
+    var x: i32 = @divTrunc(-renderInfos.GetWidthI32(), 2);
+    while (x < @divTrunc(renderInfos.GetWidthI32(), 2)) : (x += 1) {
+        var y: i32 = @divTrunc(-renderInfos.GetHeightI32(), 2);
+        while (y < @divTrunc(renderInfos.GetHeightI32(), 2)) : (y += 1) {
+            const dirrection: Vector3 = canvasToViewPort(@floatFromInt(x), @floatFromInt(y)).transform(rotation_matrix);
+            const color: Color = TraceRay(active_camera.position, dirrection, active_camera.near_plane, active_camera.far_plane, renderInfos.GetRecursionDepth());
+
+            renderInfos.PutPixel(x, y, color);
         }
     }
 }
 
 fn canvasToViewPort(x: f32, y: f32) Vector3 {
     return Vector3.init(
-        x * active_camera.aspect_ratio / renderInfos.getWidthF32(),
-        y * 1 / renderInfos.getHeightF32(),
+        x * active_camera.aspect_ratio / renderInfos.GetWidthF32(),
+        y * 1 / renderInfos.DetHeightF32(),
         active_camera.near_plane,
     );
 }
@@ -107,12 +112,12 @@ fn ClosestIntersection(origin: Vector3, dirrection: Vector3, near_plane: f32, fa
 }
 
 fn IntersectRaySphere(origin: Vector3, dirrection: Vector3, sphere: Sphere) struct { t1: f32, t2: f32 } {
-    const r: f32 = sphere.radius;
+    const r_squared: f32 = sphere.radius_squared;
     const sphere_to_origin: Vector3 = origin.subtract(sphere.center);
 
     const a: f32 = dirrection.dotProduct(dirrection);
     const b: f32 = 2 * sphere_to_origin.dotProduct(dirrection);
-    const c: f32 = sphere_to_origin.dotProduct(sphere_to_origin) - r * r;
+    const c: f32 = sphere_to_origin.dotProduct(sphere_to_origin) - r_squared;
 
     const discriminant = b * b - 4 * a * c;
     if (discriminant < 0) {

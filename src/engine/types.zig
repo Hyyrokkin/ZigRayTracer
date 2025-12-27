@@ -3,7 +3,9 @@ const ArrayList = std.ArrayList;
 
 const renderInfos = @import("renderer").render_infos;
 pub const Vector3 = renderInfos.Vector3;
+pub const Marix = renderInfos.Matrix;
 pub const Color = renderInfos.Color;
+pub const KeyboardKey = renderInfos.KeyboardKey;
 
 pub const Scene = struct {
     spheres: ArrayList(Sphere) = .empty,
@@ -28,14 +30,19 @@ pub const Scene = struct {
 pub const Sphere = struct {
     center: Vector3,
     radius: f32 = 1,
+    radius_squared: f32 = 1,
     color: Color = Color.white,
     specular: f32 = 0,
     reflective: f32 = 0,
+
+    pub fn init(self: *Sphere) void {
+        self.radius_squared = self.radius * self.radius;
+    }
 };
 
 pub const Camera = struct {
     position: Vector3 = Vector3.init(0, 0, 0),
-    direction: Vector3 = Vector3.init(0, 0, 1),
+    rotation: Vector3 = Vector3.init(0, 0, 0),
     aspect_ratio: f32 = 1,
     near_plane: f32 = 1,
     far_plane: f32 = std.math.inf(f32),

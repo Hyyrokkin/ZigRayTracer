@@ -7,6 +7,5 @@
 
     .target_fps = 60,
 
-    .window_title_prefix = "Raylib test in Zig - FPS:",
-    .window_title_sufix = " ! :3",
+    .window_title = "Raytraceing with Raylib in Zig :3",
 }

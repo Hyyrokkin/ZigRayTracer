@@ -21,21 +21,13 @@ const epsilon = renderInfos.getEpsilon();
 var active_sceene: Sceen = undefined;
 var active_camera: Camera = undefined;
 
-var thread_pool: std.Thread.Pool = undefined;
-
-pub fn init(initial_scene: Sceen, initial_camera: Camera, allocator: std.mem.Allocator) !void {
+pub fn init(initial_scene: Sceen, initial_camera: Camera) !void {
     active_sceene = initial_scene;
     active_camera = initial_camera;
-
-    try thread_pool.init(.{
-        .allocator = allocator,
-        .n_jobs = renderInfos.getThreads(),
-    });
 }
 
 pub fn deinit() void {
     active_sceene.deinit();
-    thread_pool.deinit();
 }
 
 pub fn switchScene(new_scene: Sceen) void {
@@ -56,23 +48,13 @@ pub fn update() void {
 
     var x: i32 = @divTrunc(-renderInfos.getWidthI32(), 2);
     while (x < @divTrunc(renderInfos.getWidthI32(), 2)) : (x += 1) {
-        thread_pool.spawn(workTread, .{ x, rotation_matrix }) catch {};
-        //workTread(x, rotation_matrix);
-    }
-}
+        var y: i32 = @divTrunc(-renderInfos.getHeightI32(), 2);
+        while (y < @divTrunc(renderInfos.getHeightI32(), 2)) : (y += 1) {
+            const dirrection: Vector3 = canvasToViewPort(@floatFromInt(x), @floatFromInt(y)).transform(rotation_matrix);
+            const color: Color = traceRay(active_camera.position, dirrection, active_camera.near_plane, active_camera.far_plane, renderInfos.getRecursionDepth());
 
-fn workTread(x: i32, rotation_matrix: Matrix) void {
-    var y: i32 = @divTrunc(-renderInfos.getHeightI32(), 2);
-    while (y < @divTrunc(renderInfos.getHeightI32(), 2)) : (y += 1) {
-        const dirrection: Vector3 = canvasToViewPort(@floatFromInt(x), @floatFromInt(y)).transform(rotation_matrix);
-        const color: Color = traceRay(active_camera.position, dirrection, active_camera.near_plane, active_camera.far_plane, renderInfos.getRecursionDepth());
-        _ = color; // autofix
-
-        while (!thread_pool.mutex.tryLock()) {
-            std.Thread.sleep(1);
+            renderInfos.putPixel(x, y, color);
         }
-        //renderInfos.putPixel(x, y, color);
-        thread_pool.mutex.unlock();
     }
 }
 

@@ -30,7 +30,7 @@ pub fn render(updateFunction: fn () void) !void {
 
         try redrawWindowTitle();
 
-        raylib.clearBackground(.dark_gray);
+        raylib.clearBackground(raylib.Color.dark_gray);
 
         raylib.drawTextureRec(target.texture, rec, raylib.Vector2.init(0, 0), raylib.Color.white);
     }

@@ -46,13 +46,14 @@ pub fn update() void {
 
     const rotation_matrix = Matrix.rotateX(active_camera.rotation.x).multiply(Matrix.rotateY(active_camera.rotation.y));
 
-    var x: i32 = @divTrunc(-renderInfos.getWidthI32(), 2);
-    while (x < @divTrunc(renderInfos.getWidthI32(), 2)) : (x += 1) {
-        var y: i32 = @divTrunc(-renderInfos.getHeightI32(), 2);
-        while (y < @divTrunc(renderInfos.getHeightI32(), 2)) : (y += 1) {
+    const w: i32 = renderInfos.getWidthI32();
+    var x: i32 = @divTrunc(-w, 2);
+    while (x < @divTrunc(w, 2)) : (x += 1) {
+        const h: i32 = renderInfos.getHeightI32();
+        var y: i32 = @divTrunc(-h, 2);
+        while (y < @divTrunc(h, 2)) : (y += 1) {
             const dirrection: Vector3 = canvasToViewPort(@floatFromInt(x), @floatFromInt(y)).transform(rotation_matrix);
             const color: Color = traceRay(active_camera.position, dirrection, active_camera.near_plane, active_camera.far_plane, renderInfos.getRecursionDepth());
-
             renderInfos.putPixel(x, y, color);
         }
     }

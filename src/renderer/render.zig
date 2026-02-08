@@ -31,5 +31,5 @@ fn drawFPS() !void {
     const fps_with: [:0]const u8 = try std.mem.concatWithSentinel(allocator, u8, &[_][]const u8{fps_string}, 0);
     defer allocator.free(fps_with);
 
-    raylib.drawText(fps_with, 10, 10, 10, raylib.Color.black);
+    raylib.drawText(fps_with, 10, 10, 20, raylib.Color.black);
 }

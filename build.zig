@@ -50,6 +50,10 @@ pub fn build(b: *std.Build) void {
     const raygui = raylib_dep.module("raygui"); // raygui module
     const raylib_artifact = raylib_dep.artifact("raylib"); // raylib C library
 
+    const cudaz_dep = b.dependency("cudaz", .{});
+
+    const cudaz_module = cudaz_dep.module("cudaz");
+
     const settings = b.addModule("settings", .{
         .root_source_file = b.path("src/settings/root.zig"),
         .target = target,
@@ -72,6 +76,7 @@ pub fn build(b: *std.Build) void {
         .imports = &.{
             .{ .name = "renderer", .module = renderer },
             .{ .name = "settings", .module = settings },
+            .{ .name = "cudaz", .module = cudaz_module },
         },
     });
 
@@ -129,6 +134,9 @@ pub fn build(b: *std.Build) void {
     });
 
     exe.root_module.linkLibrary(raylib_artifact);
+    exe.linkLibC();
+    exe.linkSystemLibrary("cuda");
+    exe.linkSystemLibrary("nvrtc");
 
     // This declares intent for the executable to be installed into the
     // install prefix when running `zig build` (i.e. when executing the default

@@ -1,6 +1,11 @@
 const std = @import("std");
 const math = std.math;
 
+const Cuda = @import("cudaz");
+const CuDevice = Cuda.Device;
+const CuCompile = Cuda.Compile;
+const CuLaunchConfig = Cuda.LaunchConfig;
+const kernel = @import("kernel").kernel;
 const renderInfos = @import("renderer").render_infos;
 const Color = renderInfos.Color;
 
@@ -16,17 +21,35 @@ const DirectionalLight = types.DirectionalLight;
 const Vector3 = types.Vector3;
 const Matrix = types.Marix;
 
+var alloc: std.mem.Allocator = undefined;
+var device: CuDevice = undefined;
+var d_data: Cuda.Cudaslice(f32) = undefined;
+var ptx: [:0]const u8 = undefined;
+var module: Cuda.Module = undefined;
+var function: Cuda.Function = undefined;
+
+const h_data = [_]f32{ 1.2, 2.8, 0.123 };
+
 const epsilon = renderInfos.getEpsilon();
 
 var active_sceene: Sceen = undefined;
 var active_camera: Camera = undefined;
 
-pub fn init(initial_scene: Sceen, initial_camera: Camera) !void {
+pub fn init(allocator: std.mem.Allocator, initial_scene: Sceen, initial_camera: Camera) !void {
+    alloc = allocator;
+    device = try CuDevice.default();
+    ptx = try CuCompile.cudaText(kernel, .{}, alloc);
+    module = try CuDevice.loadPtxText(ptx);
+    function = try module.getFunc("increment");
+
     active_sceene = initial_scene;
     active_camera = initial_camera;
 }
 
 pub fn deinit() void {
+    device.deinit();
+    alloc.free(ptx);
+    d_data.free();
     active_sceene.deinit();
 }
 
@@ -39,7 +62,22 @@ pub fn switchCamera(new_camera: Camera) void {
     active_camera = new_camera;
 }
 
-pub fn update(pixels: *[renderInfos.getWidthI32()][renderInfos.getHeightI32()]Color) void {
+pub fn update(pixels: *[renderInfos.getHeightI32()][renderInfos.getWidthI32()]Color) void {
+    d_data = try device.htodCopy(f32, &h_data);
+
+    function.run(.{&d_data.device_ptr}, CuLaunchConfig{
+        .block_dim = .{ 3, 1, 1 },
+        .grid_dim = .{ 1, 1, 1 },
+        .shared_mem_bytes = 0,
+    });
+
+    const res = try CuDevice.syncReclaim(f32, alloc, d_data);
+    std.debug.print("Data: %d, %d, %d\n", .{res.items});
+    for (res.items, 0..) |item, index| {
+        h_data[index] = item;
+    }
+    res.deinit(alloc);
+
     const updated_info = input.HandleInput(active_camera, active_sceene);
     active_camera = updated_info.cam;
     active_sceene = updated_info.sce;

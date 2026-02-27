@@ -6,12 +6,6 @@ pub const KeyboardKey = raylib.KeyboardKey;
 const render_options = @import("settings").render_options;
 const screen_options = @import("settings").screen_options;
 
-pub fn putPixel(x: i32, y: i32, color: Color) void {
-    const corrected_x = @divTrunc(screen_options.screen_width, 2) + x;
-    const corrected_y = screen_options.screen_height - (@divTrunc(screen_options.screen_height, 2) + y);
-    raylib.drawPixel(corrected_x, corrected_y, color);
-}
-
 pub fn getWidthI32() i32 {
     return screen_options.screen_width;
 }

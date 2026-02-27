@@ -6,11 +6,27 @@ const render_texture_2d = raylib.RenderTexture2D;
 const Rectangle = raylib.Rectangle;
 const screen_options = @import("settings").screen_options;
 
-pub fn render(updateFunction: fn () void) !void {
+pub fn render(updateFunction: fn (*[screen_options.screen_width][screen_options.screen_height]raylib.Color) void) !void {
     raylib.initWindow(screen_options.screen_width, screen_options.screen_height, screen_options.window_title);
     defer raylib.closeWindow();
 
     raylib.setTargetFPS(screen_options.target_fps);
+
+    var pixels: [screen_options.screen_height][screen_options.screen_width]raylib.Color = undefined;
+    for (pixels, 0..) |inner, y| {
+        for (inner, 0..) |_, x| {
+            pixels[y][x] = raylib.Color.black;
+        }
+    }
+
+    const screen_image: raylib.Image = .{
+        .data = &pixels,
+        .width = screen_options.screen_width,
+        .height = screen_options.screen_height,
+        .format = raylib.PixelFormat.uncompressed_r8g8b8a8,
+        .mipmaps = 1,
+    };
+    const screen_texture = try raylib.loadTextureFromImage(screen_image);
 
     while (!raylib.windowShouldClose()) {
         raylib.beginDrawing();
@@ -18,7 +34,11 @@ pub fn render(updateFunction: fn () void) !void {
 
         raylib.clearBackground(raylib.Color.dark_gray);
 
-        updateFunction();
+        updateFunction(&pixels);
+        raylib.updateTexture(screen_texture, &pixels);
+
+        raylib.drawTexture(screen_texture, 0, 0, raylib.Color.ray_white);
+
         try drawFPS();
     }
 }
